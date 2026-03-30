@@ -37,16 +37,20 @@
         }
 
         /* The Book wrapper */
-        .book {
-            width: 420px;
-            height: 594px;
-            position: absolute;
-            left: 50%;
-            transform-style: preserve-3d;
-            transition: transform var(--flip-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
-            /* Realistic shadow for light background */
-            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.12));
-        }
+        /* The Book wrapper - Zoomed out for full visibility */
+.book {
+    width: 380px;  /* Slightly narrower base */
+    height: 537px; /* Scaled down A4 ratio */
+    position: absolute;
+    left: 50%;
+    transform-style: preserve-3d;
+    
+    /* ADDED SCALE HERE: Adjust 0.85 to 0.7 if you want it even smaller */
+    transform: translateX(-50%) scale(0.85); 
+    
+    transition: transform var(--flip-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.12));
+}
 
         .leaf {
             position: absolute;
@@ -87,85 +91,43 @@
 
         /* UI Toolbar */
        /* UI Toolbar - Apple Glass Style */
-.toolbar {
+/* Individual Floating Buttons */
+/* Small, Ultra-Transparent Floating Buttons */
+.floating-btn {
     position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    height: 44px;
-    padding: 0 12px;
-    
-    /* GHOST TRANSPARENCY: Only 5% white tint */
-    background: rgba(255, 255, 255, 0.05); 
-    
-    /* Keeps the blur effect strong so you see the text behind it warping */
-    backdrop-filter: blur(15px) saturate(180%);
-    -webkit-backdrop-filter: blur(15px) saturate(180%);
-    
-    /* Very thin, faint edge */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;  /* Reduced size */
+    height: 40px; /* Reduced size */
+    border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 22px;
-    
+    background: rgba(255, 255, 255, 0.05); /* Almost invisible */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(0, 0, 0, 0.4); /* Subtle arrow color */
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 8px;
-    z-index: 1000;
-    
-    /* Removed heavy shadow for a flatter, more modern look */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-}
-
-button {
-    /* Transparent background for buttons by default */
-    background: transparent; 
-    color: #1d1d1f;
-    border: none;
-    border-radius: 18px;
-    padding: 6px 14px;
+    justify-content: center;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    z-index: 1000;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-button:hover:not(:disabled) {
-    /* Button pops only when you hover */
-    background: rgba(255, 255, 255, 0.6);
-    transform: scale(1.05);
+.floating-btn.prev { left: 20px; }
+.floating-btn.next { right: 20px; }
+
+.floating-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.8);
+    color: #000;
+    transform: translateY(-50%) scale(1.1);
 }
 
-button:active:not(:disabled) {
-    transform: scale(0.95);
+/* Hide button when it can't be used (e.g. no more pages) */
+.floating-btn:disabled {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) scale(0.8);
 }
-
-button:disabled {
-    opacity: 0.1; /* Almost invisible when disabled */
-    cursor: not-allowed;
-}
-
-/* Page info text also needs to be subtle to match */
-#page-info {
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.4);
-    min-width: 100px;
-    text-align: center;
-}
-#page-info {
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(0, 0, 0, 0.5);
-    min-width: 100px;
-    text-align: center;
-    letter-spacing: -0.2px;
-}
-
-        #page-info { font-size: 13px; font-weight: 600; color: #86868b; min-width: 140px; text-align: center; }
-
         /* Loader Overlay */
         #init-loader {
             position: fixed; inset: 0; background: #fff; z-index: 9999;
@@ -184,20 +146,21 @@ button:disabled {
 <body>
 
     <div id="init-loader">
-        <div class="spinner"></div>
-        <h2 style="margin-top: 20px;">Loading Magazine...</h2>
-    </div>
+    <div class="spinner"></div>
+    <h2 style="margin-top: 20px;">Loading Magazine...</h2>
+</div>
 
-    <div class="viewer-container">
-        <div id="book" class="book"></div>
-    </div>
+<div class="viewer-container">
+    <div id="book" class="book"></div>
+</div>
 
-    <div class="toolbar">
-        <button id="prev-btn" disabled>Prev</button>
-        <span id="page-info">Initializing...</span>
-        <button id="next-btn" disabled>Next</button>
-    </div>
+<button id="prev-btn" class="floating-btn prev" disabled aria-label="Previous Page">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</button>
 
+<button id="next-btn" class="floating-btn next" disabled aria-label="Next Page">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</button>
 <script>
     const pdfUrl = './magazine.pdf';
     const flipSound = new Audio('./flip.mp3');
@@ -258,10 +221,21 @@ button:disabled {
     }
 
     function updateBookPosition() {
-        if (currentLeaf === 0) bookEl.style.transform = 'translateX(-50%)';
-        else if (currentLeaf === totalLeaves) bookEl.style.transform = 'translateX(50%)';
-        else bookEl.style.transform = 'translateX(0)';
+       
+    const scale = 0.85; // Matches the scale in your CSS
+    
+    if (currentLeaf === 0) {
+        // Closed (Cover)
+        bookEl.style.transform = `translateX(-50%) scale(${scale})`;
+    } else if (currentLeaf === totalLeaves) {
+        // Closed (Back Cover)
+        bookEl.style.transform = `translateX(50%) scale(${scale})`;
+    } else {
+        // Open (Spread)
+        bookEl.style.transform = `translateX(0) scale(${scale})`;
     }
+}
+    
 
     async function renderPage(num) {
         if (num < 1 || num > pdfDoc.numPages || renderedPages.has(num)) return;
@@ -279,12 +253,13 @@ button:disabled {
     }
 
     function updateUI() {
-        prevBtn.disabled = currentLeaf === 0;
-        nextBtn.disabled = currentLeaf === totalLeaves;
-        pageInfoEl.textContent = currentLeaf === 0 ? "Cover" : 
-                                 currentLeaf === totalLeaves ? "Back Cover" : 
-                                 `Pages ${currentLeaf * 2} - ${currentLeaf * 2 + 1} of ${pdfDoc.numPages}`;
-    }
+    // Only handle button states
+    if (prevBtn) prevBtn.disabled = currentLeaf === 0;
+    if (nextBtn) nextBtn.disabled = currentLeaf === totalLeaves;
+    
+    // Page info update removed as element no longer exists
+}
+    
 
     function handleFlip(dir) {
         if (isAnimating || (dir === 1 && currentLeaf >= totalLeaves) || (dir === -1 && currentLeaf <= 0)) return;
