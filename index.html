@@ -3,371 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D PDF Magazine Viewer</title>
+    <title>Premium 3D Magazine Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --toolbar-bg: #1e1e1e;
-            --text-color: #ffffff;
+            /* High-end Studio Lighting: Soft grey to pure white */
+            --bg-gradient: radial-gradient(circle at center, #ffffff 0%, #e8e8e8 100%);
+            --accent-color: #007aff; 
+            --toolbar-bg: rgba(255, 255, 255, 0.85);
             --page-bg: #ffffff;
-            --flip-speed: 0.6s;
+            --flip-speed: 0.7s;
         }
 
         body {
             margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; /* Prevent scrolling, handled by 3D viewer */
+            padding: 0;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: #333;
+            font-family: 'Inter', -apple-system, sans-serif;
+            overflow: hidden;
         }
 
         /* 3D Scene Setup */
         .viewer-container {
             width: 100vw;
-            height: calc(100vh - 60px); /* Leave room for toolbar */
+            height: calc(100vh - 60px);
             display: flex;
             justify-content: center;
             align-items: center;
-            perspective: 2500px; /* Crucial for realistic 3D depth */
-            overflow: hidden;
+            perspective: 3000px;
+            background: transparent;
         }
 
         /* The Book wrapper */
         .book {
-            /* Base dimensions for a single page */
-            width: 400px;
-            height: 565px; /* Approx A4 Ratio */
+            width: 420px;
+            height: 594px;
             position: absolute;
-            left: 50%; /* Anchor the spine exactly in the center of the screen */
+            left: 50%;
             transform-style: preserve-3d;
-            transition: transform var(--flip-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform var(--flip-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+            /* Realistic shadow for light background */
+            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.12));
         }
 
-        /* Responsive scaling */
-        @media (max-width: 900px) { .book { width: 45vw; height: 63vw; } }
-        @media (max-width: 600px) { .book { width: 48vw; height: 68vw; } }
-
-        /* A Physical Leaf (holds a front and back page) */
         .leaf {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform-origin: left center; /* Pivot on the spine */
+            top: 0; left: 0; width: 100%; height: 100%;
+            transform-origin: left center;
             transform-style: preserve-3d;
-            transition: transform var(--flip-speed) cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform var(--flip-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
         }
 
-        .leaf.flipped {
-            transform: rotateY(-180deg);
-        }
+        .leaf.flipped { transform: rotateY(-180deg); }
 
-        /* Individual PDF Page Elements */
         .page {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden; /* Hides the mirrored side naturally */
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
             background-color: var(--page-bg);
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #333;
+            /* Paper Texture effect */
+            background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex; justify-content: center; align-items: center;
             overflow: hidden;
         }
 
-        .page.front {
-            transform: rotateY(0deg);
-        }
+        .page.back { transform: rotateY(180deg); }
 
-        .page.back {
-            /* Pre-rotate the back page so it reads normally when the leaf hits -180deg */
-            transform: rotateY(180deg);
-        }
-
-        /* Spine Shadows for depth */
+        /* Spine Shadows */
         .page.front::after {
             content: ""; position: absolute; top: 0; left: 0; bottom: 0; width: 40px;
-            background: linear-gradient(to right, rgba(0,0,0,0.15), transparent);
-            pointer-events: none;
+            background: linear-gradient(to right, rgba(0,0,0,0.05) 0%, transparent 100%);
         }
 
         .page.back::after {
             content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
-            background: linear-gradient(to left, rgba(0,0,0,0.15), transparent);
-            pointer-events: none;
+            background: linear-gradient(to left, rgba(0,0,0,0.05) 0%, transparent 100%);
         }
 
-        .page.blank { background: #f0f0f0; }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .loader {
-            font-size: 14px;
-            color: #888;
-            position: absolute;
-        }
+        canvas { width: 100%; height: 100%; object-fit: contain; }
 
         /* UI Toolbar */
-        .toolbar {
-            position: fixed;
-            bottom: 0; left: 0;
-            width: 100%; height: 60px;
-            background: var(--toolbar-bg);
-            border-top: 1px solid #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            z-index: 1000;
-        }
+       /* UI Toolbar - Apple Glass Style */
+.toolbar {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 44px;
+    padding: 0 12px;
+    
+    /* GHOST TRANSPARENCY: Only 5% white tint */
+    background: rgba(255, 255, 255, 0.05); 
+    
+    /* Keeps the blur effect strong so you see the text behind it warping */
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    
+    /* Very thin, faint edge */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 22px;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    
+    /* Removed heavy shadow for a flatter, more modern look */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
 
-        button {
-            background: #333;
-            color: white;
-            border: 1px solid #444;
-            border-radius: 4px;
-            padding: 8px 16px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: bold;
-        }
+button {
+    /* Transparent background for buttons by default */
+    background: transparent; 
+    color: #1d1d1f;
+    border: none;
+    border-radius: 18px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        button:hover:not(:disabled) { background: #555; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:hover:not(:disabled) {
+    /* Button pops only when you hover */
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(1.05);
+}
 
-        #page-info { font-variant-numeric: tabular-nums; min-width: 150px; text-align: center;}
-        
-        /* Fullscreen Loading Overlay */
+button:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+button:disabled {
+    opacity: 0.1; /* Almost invisible when disabled */
+    cursor: not-allowed;
+}
+
+/* Page info text also needs to be subtle to match */
+#page-info {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.4);
+    min-width: 100px;
+    text-align: center;
+}
+#page-info {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.5);
+    min-width: 100px;
+    text-align: center;
+    letter-spacing: -0.2px;
+}
+
+        #page-info { font-size: 13px; font-weight: 600; color: #86868b; min-width: 140px; text-align: center; }
+
+        /* Loader Overlay */
         #init-loader {
-            position: fixed; inset: 0; background: #121212; z-index: 9999;
+            position: fixed; inset: 0; background: #fff; z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.5s;
         }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-color);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
     <div id="init-loader">
-        <h2>Loading Magazine...</h2>
-        <p>Fetching PDF data</p>
+        <div class="spinner"></div>
+        <h2 style="margin-top: 20px;">Loading Magazine...</h2>
     </div>
 
     <div class="viewer-container">
-        <div id="book" class="book">
-            </div>
+        <div id="book" class="book"></div>
     </div>
 
     <div class="toolbar">
-        <button id="prev-btn" disabled>&#8592; Prev</button>
+        <button id="prev-btn" disabled>Prev</button>
         <span id="page-info">Initializing...</span>
-        <button id="next-btn" disabled>Next &#8594;</button>
+        <button id="next-btn" disabled>Next</button>
     </div>
 
 <script>
-    // Configuration
-    // Using a reliable sample PDF (Tracemonkey paper)
-   const pdfUrl = './magazine.pdf';
-    
-    // Initialize PDF.js worker
+    const pdfUrl = './magazine.pdf';
+    const flipSound = new Audio('./flip.mp3');
+    flipSound.preload = 'auto';
+
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // State Management
-    let pdfDoc = null;
-    let totalLeaves = 0;
-    let currentLeaf = 0; // The top leaf index on the right stack
-    let isAnimating = false;
-    let leavesDOM = [];
+    let pdfDoc = null, totalLeaves = 0, currentLeaf = 0, isAnimating = false, leavesDOM = [];
     const renderedPages = new Set();
+    const bookEl = document.getElementById('book'), pageInfoEl = document.getElementById('page-info');
+    const prevBtn = document.getElementById('prev-btn'), nextBtn = document.getElementById('next-btn');
 
-    const bookEl = document.getElementById('book');
-    const pageInfoEl = document.getElementById('page-info');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
+    function playFlipSound() {
+        flipSound.currentTime = 0;
+        flipSound.play().catch(e => console.log("Audio waiting for interaction"));
+    }
 
-    // 1. Initialization
     async function initPDF() {
         try {
             pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
-            
-            // Calculate physical leaves (2 pages per leaf)
             totalLeaves = Math.ceil(pdfDoc.numPages / 2);
             buildDOM();
-            
-            // Set initial z-indexes and layout positions
             updateZIndexes();
             updateBookPosition();
             renderVisiblePages();
             updateUI();
 
-            // Fade out loader
-            const initLoader = document.getElementById('init-loader');
-            initLoader.style.opacity = '0';
-            setTimeout(() => initLoader.remove(), 500);
-
+            const loader = document.getElementById('init-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 500);
         } catch (err) {
-            document.getElementById('init-loader').innerHTML = `<h2>Error loading PDF</h2><p>${err.message}</p>`;
+            document.getElementById('init-loader').innerHTML = `<h2>Error</h2><p>${err.message}</p>`;
         }
     }
 
-    // 2. DOM Construction 
     function buildDOM() {
         for (let i = 0; i < totalLeaves; i++) {
             const leaf = document.createElement('div');
             leaf.className = 'leaf';
-
-            // Calculate mapped PDF pages for Front and Back of this leaf
-            const frontPageNum = i * 2 + 1;
-            const backPageNum = i * 2 + 2;
-
-            // Generate Front Face
-            const frontDiv = document.createElement('div');
-            frontDiv.className = 'page front';
-            if (frontPageNum <= pdfDoc.numPages) {
-                frontDiv.innerHTML = `<span class="loader">Loading...</span><canvas id="canvas-${frontPageNum}"></canvas>`;
-            } else {
-                frontDiv.classList.add('blank'); // Add filler for empty page
-            }
-
-            // Generate Back Face
-            const backDiv = document.createElement('div');
-            backDiv.className = 'page back';
-            if (backPageNum <= pdfDoc.numPages) {
-                backDiv.innerHTML = `<span class="loader">Loading...</span><canvas id="canvas-${backPageNum}"></canvas>`;
-            } else {
-                backDiv.classList.add('blank'); // Add filler for empty page
-            }
-
-            leaf.appendChild(frontDiv);
-            leaf.appendChild(backDiv);
+            const fNum = i * 2 + 1, bNum = i * 2 + 2;
+            leaf.innerHTML = `
+                <div class="page front ${fNum > pdfDoc.numPages ? 'blank' : ''}">
+                    ${fNum <= pdfDoc.numPages ? `<canvas id="canvas-${fNum}"></canvas>` : ''}
+                </div>
+                <div class="page back ${bNum > pdfDoc.numPages ? 'blank' : ''}">
+                    ${bNum <= pdfDoc.numPages ? `<canvas id="canvas-${bNum}"></canvas>` : ''}
+                </div>`;
             bookEl.appendChild(leaf);
             leavesDOM.push(leaf);
         }
     }
 
-    // 3. Logic & Z-Index Management
     function updateZIndexes() {
         leavesDOM.forEach((leaf, i) => {
-            if (i < currentLeaf) {
-                // Flipped stack (Left side). Lower index leaves were flipped first, so higher index goes on top.
-                leaf.style.zIndex = i + 1; 
-            } else {
-                // Unflipped stack (Right side). Lower index leaves must sit on top of higher ones.
-                leaf.style.zIndex = totalLeaves - i; 
-            }
+            leaf.style.zIndex = i < currentLeaf ? i + 1 : totalLeaves - i;
         });
     }
 
     function updateBookPosition() {
-        // Shift the book to keep the currently readable view perfectly centered
-        if (currentLeaf === 0) {
-            // Closed (Cover). Shift left by half a page to center the right side
-            bookEl.style.transform = 'translateX(-50%)';
-        } else if (currentLeaf === totalLeaves) {
-            // Closed (Back Cover). Shift right by half a page to center the left side
-            bookEl.style.transform = 'translateX(50%)';
-        } else {
-            // Open (Spread). Spine is exactly centered.
-            bookEl.style.transform = 'translateX(0)';
-        }
+        if (currentLeaf === 0) bookEl.style.transform = 'translateX(-50%)';
+        else if (currentLeaf === totalLeaves) bookEl.style.transform = 'translateX(50%)';
+        else bookEl.style.transform = 'translateX(0)';
     }
 
-    // 4. Lazy Loading Pages (Handles large PDFs easily)
-    async function renderPage(pageNum) {
-        if (pageNum < 1 || pageNum > pdfDoc.numPages || renderedPages.has(pageNum)) return;
-        renderedPages.add(pageNum);
-
-        const canvas = document.getElementById(`canvas-${pageNum}`);
+    async function renderPage(num) {
+        if (num < 1 || num > pdfDoc.numPages || renderedPages.has(num)) return;
+        renderedPages.add(num);
+        const canvas = document.getElementById(`canvas-${num}`);
         if (!canvas) return;
-
-        const ctx = canvas.getContext('2d', { alpha: false });
-        try {
-            const page = await pdfDoc.getPage(pageNum);
-            
-            // Render High DPI, CSS bounds handle responsive scale
-            const scale = window.devicePixelRatio > 1 ? 2 : 1.5;
-            const viewport = page.getViewport({ scale });
-            
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-            
-            // Remove the loading text once complete
-            const loader = canvas.parentElement.querySelector('.loader');
-            if (loader) loader.remove();
-        } catch (e) {
-            console.error(`Page ${pageNum} render error:`, e);
-        }
+        const page = await pdfDoc.getPage(num);
+        const viewport = page.getViewport({ scale: 2 });
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
     }
 
     function renderVisiblePages() {
-        // We load the current visible spread, PLUS one spread ahead & one spread behind
-        // This ensures the animation is seamless and pre-loads dynamically.
-        const pagesToLoad = [
-            currentLeaf * 2 - 1, currentLeaf * 2,     // Previous spread
-            currentLeaf * 2 + 1, currentLeaf * 2 + 2, // Current spread
-            currentLeaf * 2 + 3, currentLeaf * 2 + 4  // Next spread
-        ];
-
-        pagesToLoad.forEach(renderPage);
+        [currentLeaf*2, currentLeaf*2+1, currentLeaf*2+2, currentLeaf*2+3].forEach(renderPage);
     }
 
-    // 5. User Interactions
     function updateUI() {
         prevBtn.disabled = currentLeaf === 0;
         nextBtn.disabled = currentLeaf === totalLeaves;
+        pageInfoEl.textContent = currentLeaf === 0 ? "Cover" : 
+                                 currentLeaf === totalLeaves ? "Back Cover" : 
+                                 `Pages ${currentLeaf * 2} - ${currentLeaf * 2 + 1} of ${pdfDoc.numPages}`;
+    }
 
-        if (currentLeaf === 0) {
-            pageInfoEl.textContent = `Cover`;
-        } else if (currentLeaf === totalLeaves) {
-            pageInfoEl.textContent = `Back Cover`;
+    function handleFlip(dir) {
+        if (isAnimating || (dir === 1 && currentLeaf >= totalLeaves) || (dir === -1 && currentLeaf <= 0)) return;
+        isAnimating = true;
+        playFlipSound();
+
+        const leaf = leavesDOM[dir === 1 ? currentLeaf : currentLeaf - 1];
+        leaf.style.zIndex = 100;
+
+        if (dir === 1) {
+            leaf.classList.add('flipped');
+            currentLeaf++;
         } else {
-            pageInfoEl.textContent = `Pages ${currentLeaf * 2} - ${currentLeaf * 2 + 1} of ${pdfDoc.numPages}`;
+            leaf.classList.remove('flipped');
+            currentLeaf--;
         }
-    }
 
-    function flipNext() {
-        if (currentLeaf >= totalLeaves || isAnimating) return;
-        isAnimating = true;
-
-        const leaf = leavesDOM[currentLeaf];
-        leaf.classList.add('flipped');
-        
-        // Temporarily raise Z-index extremely high so it doesn't clip through resting pages while arcing
-        leaf.style.zIndex = totalLeaves + 50; 
-        
-        currentLeaf++;
-        updateBookPosition();
-        renderVisiblePages();
-        updateUI();
-
-        // Release animation lock and settle z-indexes after the CSS transition
-        setTimeout(() => {
-            isAnimating = false;
-            updateZIndexes();
-        }, 600);
-    }
-
-    function flipPrev() {
-        if (currentLeaf <= 0 || isAnimating) return;
-        isAnimating = true;
-
-        currentLeaf--;
-        const leaf = leavesDOM[currentLeaf];
-        leaf.classList.remove('flipped');
-        
-        // Raise Z-index while arcing back
-        leaf.style.zIndex = totalLeaves + 50;
-        
         updateBookPosition();
         renderVisiblePages();
         updateUI();
@@ -375,35 +309,18 @@
         setTimeout(() => {
             isAnimating = false;
             updateZIndexes();
-        }, 600);
+        }, 700);
     }
 
-    // Attach Event Listeners
-    nextBtn.addEventListener('click', flipNext);
-    prevBtn.addEventListener('click', flipPrev);
-
-    // Keyboard support
+    nextBtn.onclick = () => handleFlip(1);
+    prevBtn.onclick = () => handleFlip(-1);
+    
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') flipNext();
-        if (e.key === 'ArrowLeft') flipPrev();
+        if (e.key === 'ArrowRight') handleFlip(1);
+        if (e.key === 'ArrowLeft') handleFlip(-1);
     });
 
-    // Touch Support (Swipe)
-    let touchStartX = 0;
-    document.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    document.addEventListener('touchend', e => {
-        let touchEndX = e.changedTouches[0].screenX;
-        let diff = touchStartX - touchEndX;
-        if (diff > 50) flipNext();       // Swipe Left
-        else if (diff < -50) flipPrev(); // Swipe Right
-    }, { passive: true });
-
-    // Boot App
     initPDF();
-
 </script>
 </body>
 </html>
