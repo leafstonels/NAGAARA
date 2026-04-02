@@ -117,12 +117,6 @@ body {
   transition: transform 0.5s ease;
 }
 
-@media (max-width: 768px) {
-  #book {
-    transform: scale(0.7);
-  }
-}
-
 /* Spine shadow */
 #book::after {
   content: '';
@@ -502,15 +496,21 @@ function cloneCanvas(original) {
 }
 
 function fitBookToScreen() {
-  const container = document.getElementById('book-container');
   const book = document.getElementById('book');
 
-  const scaleX = container.clientWidth / book.offsetWidth;
-  const scaleY = container.clientHeight / book.offsetHeight;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  const baseWidth = 400 * 2; // double page width
+  const baseHeight = 560;
+
+  const scaleX = screenWidth / baseWidth;
+  const scaleY = screenHeight / baseHeight;
 
   const scale = Math.min(scaleX, scaleY, 1);
 
   book.style.transform = `scale(${scale})`;
+  book.style.transformOrigin = 'center center';
 }
 
 function updateBookState() {
@@ -691,7 +691,10 @@ function toggleMode() {
     singleContainer.style.display = 'none';
     btnMode.textContent = isDoubleMode ? '📖' : '📄';
     updateBookState();
-    fitBookToScreen();
+ 
+    setTimeout(() => {
+     fitBookToScreen();
+    }, 100);
   }
   updateNavButtons();
   updateThumbs();
@@ -833,6 +836,9 @@ async function init() {
       btnMode.textContent = isDoubleMode ? '📖' : '📄';
       await renderBook();
       fitBookToScreen();
+      setTimeout(() => {
+        fitBookToScreen();
+      }, 100);
     } else {
       bookContainer.style.display = 'none';
       singleContainer.style.display = 'flex';
